@@ -1,41 +1,51 @@
 package com.sjiwon.securityjwt.global.security.principal;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sjiwon.securityjwt.user.domain.model.Role;
+import com.sjiwon.securityjwt.user.domain.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
-@Getter
-@RequiredArgsConstructor
-public class UserPrincipal implements UserDetails {
-    private final UserAuthenticationDto user;
+public record UserPrincipal(
+        Long id,
+        String name,
+        String loginId,
+        @JsonIgnore String password,
+        List<String> roles
+) implements UserDetails {
+    public UserPrincipal(final User user) {
+        this(
+                user.getId(),
+                user.getName(),
+                user.getLoginId(),
+                user.getPassword(),
+                user.getRoles()
+                        .stream()
+                        .map(Role::getAuthority)
+                        .toList()
+        );
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         final Collection<GrantedAuthority> authorities = new ArrayList<>();
-        addRoles(authorities);
+        roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
         return authorities;
-    }
-
-    private void addRoles(final Collection<GrantedAuthority> authorities) {
-        user.getRoles()
-                .stream()
-                .map(SimpleGrantedAuthority::new)
-                .forEach(authorities::add);
     }
 
     @Override
     public String getPassword() {
-        return user.getLoginPassword();
+        return password;
     }
 
     @Override
     public String getUsername() {
-        return user.getLoginId();
+        return loginId;
     }
 
     @Override

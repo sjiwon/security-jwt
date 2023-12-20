@@ -2,7 +2,8 @@ package com.sjiwon.securityjwt.global.annotation;
 
 import com.sjiwon.securityjwt.global.exception.CommonException;
 import com.sjiwon.securityjwt.global.security.exception.AuthErrorCode;
-import com.sjiwon.securityjwt.token.domain.model.TokenType;
+import com.sjiwon.securityjwt.token.domain.model.Authenticated;
+import com.sjiwon.securityjwt.token.utils.AuthorizationExtractor;
 import com.sjiwon.securityjwt.token.utils.TokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -12,16 +13,13 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import static com.sjiwon.securityjwt.token.utils.AuthorizationExtractor.extractAccessToken;
-import static com.sjiwon.securityjwt.token.utils.AuthorizationExtractor.extractRefreshToken;
-
 @RequiredArgsConstructor
-public class ExtractTokenArgumentResolver implements HandlerMethodArgumentResolver {
+public class AuthArgumentResolver implements HandlerMethodArgumentResolver {
     private final TokenProvider tokenProvider;
 
     @Override
     public boolean supportsParameter(final MethodParameter parameter) {
-        return parameter.hasParameterAnnotation(ExtractToken.class);
+        return parameter.hasParameterAnnotation(Auth.class);
     }
 
     @Override
@@ -32,19 +30,13 @@ public class ExtractTokenArgumentResolver implements HandlerMethodArgumentResolv
             final WebDataBinderFactory binderFactory
     ) {
         final HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
-        final ExtractToken extractToken = parameter.getParameterAnnotation(ExtractToken.class);
-
-        final String token = getToken(request, extractToken.tokenType());
-        tokenProvider.validateToken(token);
-        return token;
+        final String accessToken = getAccessToken(request);
+        final Long userId = tokenProvider.getId(accessToken);
+        return new Authenticated(userId, accessToken);
     }
 
-    private String getToken(final HttpServletRequest request, final TokenType type) {
-        if (type == TokenType.ACCESS) {
-            return extractAccessToken(request)
-                    .orElseThrow(() -> CommonException.type(AuthErrorCode.INVALID_PERMISSION));
-        }
-        return extractRefreshToken(request)
+    private String getAccessToken(final HttpServletRequest request) {
+        return AuthorizationExtractor.extractAccessToken(request)
                 .orElseThrow(() -> CommonException.type(AuthErrorCode.INVALID_PERMISSION));
     }
 }

@@ -1,6 +1,6 @@
 package com.sjiwon.securityjwt.global.security.filter;
 
-import com.sjiwon.securityjwt.global.security.exception.TistorySecurityAccessDeniedException;
+import com.sjiwon.securityjwt.global.security.exception.SecurityJwtAccessDeniedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +19,7 @@ public class LogoutExceptionTranslationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws ServletException, IOException {
         try {
             filterChain.doFilter(request, response);
-        } catch (final TistorySecurityAccessDeniedException ex) {
+        } catch (final SecurityJwtAccessDeniedException ex) {
             accessDeniedHandler.handle(request, response, ex);
         }
     }

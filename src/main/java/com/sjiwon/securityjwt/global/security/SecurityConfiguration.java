@@ -1,18 +1,22 @@
 package com.sjiwon.securityjwt.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sjiwon.securityjwt.global.security.filter.JsonAuthenticationFilter;
 import com.sjiwon.securityjwt.global.security.filter.JwtAuthorizationFilter;
 import com.sjiwon.securityjwt.global.security.filter.LogoutExceptionTranslationFilter;
-import com.sjiwon.securityjwt.global.security.filter.TokenInvalidExceptionTranslationFilter;
-import com.sjiwon.securityjwt.global.security.handler.CustomAccessDeniedHandler;
-import com.sjiwon.securityjwt.global.security.handler.CustomAuthenticationFailureHandler;
-import com.sjiwon.securityjwt.global.security.handler.CustomAuthenticationSuccessHandler;
-import com.sjiwon.securityjwt.global.security.handler.CustomLogoutSuccessHandler;
-import com.sjiwon.securityjwt.global.security.provider.CustomAuthenticationProvider;
-import com.sjiwon.securityjwt.global.security.service.CustomUserDetailsService;
-import com.sjiwon.securityjwt.token.service.TokenPersistenceService;
-import com.sjiwon.securityjwt.token.utils.JwtTokenProvider;
-import com.sjiwon.securityjwt.user.domain.UserRepository;
+import com.sjiwon.securityjwt.global.security.handler.JsonAuthenticationFailureHandler;
+import com.sjiwon.securityjwt.global.security.handler.JsonAuthenticationSuccessHandler;
+import com.sjiwon.securityjwt.global.security.handler.JwtAccessDeniedHandler;
+import com.sjiwon.securityjwt.global.security.handler.JwtAuthenticationEntryPoint;
+import com.sjiwon.securityjwt.global.security.handler.JwtLogoutSuccessHandler;
+import com.sjiwon.securityjwt.global.security.handler.JwtLogoutTokenCheckHandler;
+import com.sjiwon.securityjwt.global.security.properties.CorsProperties;
+import com.sjiwon.securityjwt.global.security.provider.JsonAuthenticationProvider;
+import com.sjiwon.securityjwt.global.security.provider.RdbUserDetailsService;
+import com.sjiwon.securityjwt.token.domain.service.TokenManager;
+import com.sjiwon.securityjwt.token.utils.TokenProvider;
+import com.sjiwon.securityjwt.token.utils.TokenResponseWriter;
+import com.sjiwon.securityjwt.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,23 +32,33 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final ObjectMapper objectMapper;
-    private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationConfiguration authenticationConfiguration;
-    private final TokenPersistenceService tokenPersistenceService;
+    private final CorsProperties corsProperties;
+    private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
+    private final TokenProvider tokenProvider;
+    private final TokenManager tokenManager;
+    private final TokenResponseWriter tokenResponseWriter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -52,82 +66,119 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return new CustomUserDetailsService(userRepository);
+    public CorsConfigurationSource corsConfigurationSource() {
+        final CorsConfiguration corsConfiguration = new CorsConfiguration();
+        corsConfiguration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
+        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"));
+        corsConfiguration.setAllowedHeaders(List.of("*"));
+        corsConfiguration.setAllowCredentials(true);
+
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", corsConfiguration);
+        return source;
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        return new CustomAuthenticationProvider(userDetailsService(), passwordEncoder());
+    public UserDetailsService rdbUserDetailsService() {
+        return new RdbUserDetailsService(userRepository);
+    }
+
+    @Bean
+    public AuthenticationProvider jsonAuthenticationProvider() {
+        return new JsonAuthenticationProvider(rdbUserDetailsService(), passwordEncoder());
     }
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
         final ProviderManager authenticationManager = (ProviderManager) authenticationConfiguration.getAuthenticationManager();
-        authenticationManager.getProviders().add(authenticationProvider());
+        authenticationManager.getProviders().add(jsonAuthenticationProvider());
         return authenticationManager;
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler() {
-        return new CustomAuthenticationSuccessHandler(jwtTokenProvider, tokenPersistenceService, objectMapper);
+    public AuthenticationSuccessHandler jsonAuthenticationSuccessHandler() {
+        return new JsonAuthenticationSuccessHandler(tokenProvider, tokenManager, tokenResponseWriter);
     }
 
     @Bean
-    public AuthenticationFailureHandler authenticationFailureHandler() {
-        return new CustomAuthenticationFailureHandler(objectMapper);
+    public AuthenticationFailureHandler jsonAuthenticationFailureHandler() {
+        return new JsonAuthenticationFailureHandler(objectMapper);
     }
 
     @Bean
-    public AccessDeniedHandler accessDeniedHandler() {
-        return new CustomAccessDeniedHandler(objectMapper);
+    public JsonAuthenticationFilter jsonAuthenticationFilter() throws Exception {
+        final JsonAuthenticationFilter authenticationFilter = new JsonAuthenticationFilter(objectMapper);
+        authenticationFilter.setAuthenticationManager(authenticationManager());
+        authenticationFilter.setAuthenticationSuccessHandler(jsonAuthenticationSuccessHandler());
+        authenticationFilter.setAuthenticationFailureHandler(jsonAuthenticationFailureHandler());
+        return authenticationFilter;
     }
 
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtTokenProvider, userRepository);
+        return new JwtAuthorizationFilter(tokenProvider, userRepository, jwtAccessDeniedHandler());
     }
 
     @Bean
-    public TokenInvalidExceptionTranslationFilter tokenInvalidExceptionTranslationFilter() {
-        return new TokenInvalidExceptionTranslationFilter(accessDeniedHandler());
+    public AuthenticationEntryPoint jwtAuthenticationEntryPoint() {
+        return new JwtAuthenticationEntryPoint(objectMapper);
+    }
+
+    @Bean
+    public AccessDeniedHandler jwtAccessDeniedHandler() {
+        return new JwtAccessDeniedHandler(objectMapper);
+    }
+
+    @Bean
+    public LogoutHandler jwtLogoutTokenCheckHandler() {
+        return new JwtLogoutTokenCheckHandler();
     }
 
     @Bean
     public LogoutSuccessHandler jwtLogoutSuccessHandler() {
-        return new CustomLogoutSuccessHandler(jwtTokenProvider, tokenPersistenceService);
+        return new JwtLogoutSuccessHandler(tokenManager);
     }
 
     @Bean
     public LogoutExceptionTranslationFilter logoutExceptionTranslationFilter() {
-        return new LogoutExceptionTranslationFilter(accessDeniedHandler());
+        return new LogoutExceptionTranslationFilter(jwtAccessDeniedHandler());
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable);
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
+        http.formLogin(AbstractHttpConfigurer::disable);
         http.httpBasic(AbstractHttpConfigurer::disable);
 
-        http.sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http.authorizeHttpRequests(request ->
+                request
+                        .requestMatchers("/api/login").permitAll()
+                        .requestMatchers("/api/logout").hasRole("USER")
+                        .requestMatchers("/api/token/reissue").permitAll()
+        );
+
+        http.sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        );
 
         http.addFilterBefore(logoutExceptionTranslationFilter(), LogoutFilter.class);
         http.addFilterBefore(jwtAuthorizationFilter(), LogoutExceptionTranslationFilter.class);
-        http.addFilterBefore(tokenInvalidExceptionTranslationFilter(), JwtAuthorizationFilter.class);
+        http.addFilterAt(jsonAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        http.formLogin()
-                .loginProcessingUrl("/api/login")
-                .usernameParameter("loginId")
-                .successHandler(authenticationSuccessHandler())
-                .failureHandler(authenticationFailureHandler());
+        http.logout(logout ->
+                logout.logoutUrl("/api/logout")
+                        .clearAuthentication(true)
+                        .deleteCookies(TokenResponseWriter.REFRESH_TOKEN_COOKIE)
+                        .addLogoutHandler(jwtLogoutTokenCheckHandler())
+                        .logoutSuccessHandler(jwtLogoutSuccessHandler())
+        );
 
-        http.logout()
-                .logoutUrl("/api/logout")
-                .clearAuthentication(true)
-                .logoutSuccessHandler(jwtLogoutSuccessHandler());
-
-        http.exceptionHandling()
-                .accessDeniedHandler(accessDeniedHandler());
+        http.exceptionHandling(exception ->
+                exception.authenticationEntryPoint(jwtAuthenticationEntryPoint())
+                        .accessDeniedHandler(jwtAccessDeniedHandler())
+        );
 
         return http.build();
     }

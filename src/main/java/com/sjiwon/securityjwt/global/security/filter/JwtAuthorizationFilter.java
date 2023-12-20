@@ -1,67 +1,65 @@
 package com.sjiwon.securityjwt.global.security.filter;
 
 import com.sjiwon.securityjwt.global.security.exception.AuthErrorCode;
-import com.sjiwon.securityjwt.global.security.exception.TistorySecurityAccessDeniedException;
-import com.sjiwon.securityjwt.global.security.principal.UserAuthenticationDto;
+import com.sjiwon.securityjwt.global.security.exception.SecurityJwtAccessDeniedException;
 import com.sjiwon.securityjwt.global.security.principal.UserPrincipal;
+import com.sjiwon.securityjwt.token.exception.InvalidTokenException;
 import com.sjiwon.securityjwt.token.utils.AuthorizationExtractor;
-import com.sjiwon.securityjwt.token.utils.JwtTokenProvider;
-import com.sjiwon.securityjwt.user.domain.User;
-import com.sjiwon.securityjwt.user.domain.UserRepository;
-import com.sjiwon.securityjwt.user.domain.role.Role;
+import com.sjiwon.securityjwt.token.utils.TokenProvider;
+import com.sjiwon.securityjwt.user.domain.model.User;
+import com.sjiwon.securityjwt.user.domain.repository.UserRepository;
+import com.sjiwon.securityjwt.user.exception.UserErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenProvider tokenProvider;
     private final UserRepository userRepository;
+    private final AccessDeniedHandler accessDeniedHandler;
 
     @Override
-    protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws ServletException, IOException {
-        final String token = AuthorizationExtractor.extractToken(request);
+    protected void doFilterInternal(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            final FilterChain filterChain
+    ) throws ServletException, IOException {
+        final Optional<String> token = AuthorizationExtractor.extractAccessToken(request);
 
-        if (token != null) {
-            if (jwtTokenProvider.isTokenValid(token)) {
-                final Long userId = jwtTokenProvider.getId(token);
-                final User user = userRepository.findByIdWithRoles(userId)
-                        .orElseThrow(() -> TistorySecurityAccessDeniedException.type(AuthErrorCode.INVALID_TOKEN));
-                final Set<Role> roles = user.getRoles();
+        if (token.isPresent()) {
+            final String accessToken = token.get();
+            try {
+                tokenProvider.validateToken(accessToken);
 
-                final UserPrincipal principal = new UserPrincipal(new UserAuthenticationDto(user, roles));
-                final UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(principal, "", generateUserRoles(roles));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            } else {
-                throw TistorySecurityAccessDeniedException.type(AuthErrorCode.EXPIRED_OR_POLLUTED_TOKEN);
+                final User user = getUserByToken(accessToken);
+                applyUserToSecurityContext(user);
+            } catch (final InvalidTokenException e) {
+                accessDeniedHandler.handle(request, response, SecurityJwtAccessDeniedException.type(AuthErrorCode.INVALID_TOKEN));
             }
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private Collection<GrantedAuthority> generateUserRoles(final Set<Role> role) {
-        final Collection<GrantedAuthority> authorities = new ArrayList<>();
-        addRoles(authorities, role);
-        return authorities;
+    private User getUserByToken(final String accessToken) {
+        final Long userId = tokenProvider.getId(accessToken);
+        return userRepository.findByIdWithRoles(userId)
+                .orElseThrow(() -> SecurityJwtAccessDeniedException.type(UserErrorCode.USER_NOT_FOUND));
     }
 
-    private void addRoles(final Collection<GrantedAuthority> authorities, final Set<Role> roles) {
-        roles.stream()
-                .map(Role::getAuthority)
-                .map(SimpleGrantedAuthority::new)
-                .forEach(authorities::add);
+    private void applyUserToSecurityContext(final User user) {
+        final UserPrincipal principal = new UserPrincipal(user);
+        final UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(principal, "", principal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 }

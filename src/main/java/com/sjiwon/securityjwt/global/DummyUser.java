@@ -1,8 +1,8 @@
 package com.sjiwon.securityjwt.global;
 
-import com.sjiwon.securityjwt.user.domain.User;
-import com.sjiwon.securityjwt.user.domain.UserRepository;
-import com.sjiwon.securityjwt.user.domain.role.RoleType;
+import com.sjiwon.securityjwt.user.domain.model.RoleType;
+import com.sjiwon.securityjwt.user.domain.model.User;
+import com.sjiwon.securityjwt.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -21,12 +21,12 @@ public class DummyUser {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initUser() {
-        final User user = User.builder()
-                .name("user")
-                .loginId("user")
-                .password(passwordEncoder.encode("1234"))
-                .build();
-        user.applyUserRoles(Set.of(RoleType.USER));
+        final User user = new User(
+                "user",
+                passwordEncoder.encode("1234"),
+                "user",
+                Set.of(RoleType.USER)
+        );
         userRepository.save(user);
     }
 }

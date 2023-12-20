@@ -1,5 +1,6 @@
 package com.sjiwon.securityjwt.token.utils;
 
+import com.sjiwon.securityjwt.token.exception.InvalidTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
@@ -20,7 +21,7 @@ import java.util.Date;
 
 @Slf4j
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenProvider {
     private final SecretKey secretKey;
     private final long accessTokenValidityInMilliseconds;
     private final long refreshTokenValidityInMilliseconds;
@@ -33,10 +34,12 @@ public class JwtTokenProvider {
         this.refreshTokenValidityInMilliseconds = refreshTokenValidityInMilliseconds;
     }
 
+    @Override
     public String createAccessToken(final Long userId) {
         return createToken(userId, accessTokenValidityInMilliseconds);
     }
 
+    @Override
     public String createRefreshToken(final Long userId) {
         return createToken(userId, refreshTokenValidityInMilliseconds);
     }
@@ -55,24 +58,29 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    @Override
     public Long getId(final String token) {
         return getClaims(token)
                 .getBody()
                 .get("id", Long.class);
     }
 
-    public boolean isTokenValid(final String token) {
+    @Override
+    public void validateToken(final String token) {
         try {
             final Jws<Claims> claims = getClaims(token);
             final Date expiredDate = claims.getBody().getExpiration();
             final Date now = new Date();
-            return expiredDate.after(now);
-        } catch (final ExpiredJwtException e) {
-            log.info("만료된 토큰");
-            return false;
-        } catch (final SecurityException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
-            log.info("유효하지 않은 토큰");
-            return false;
+
+            if (expiredDate.before(now)) {
+                throw new InvalidTokenException();
+            }
+        } catch (final ExpiredJwtException |
+                       SecurityException |
+                       MalformedJwtException |
+                       UnsupportedJwtException |
+                       IllegalArgumentException e) {
+            throw new InvalidTokenException();
         }
     }
 

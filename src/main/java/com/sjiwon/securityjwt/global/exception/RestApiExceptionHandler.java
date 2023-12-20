@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class RestApiExceptionHandler {
-    @ExceptionHandler(SecurityJwtCommonException.class)
-    public ResponseEntity<ErrorResponse> securityJwtCommonException(final SecurityJwtCommonException exception) {
+    @ExceptionHandler(CommonException.class)
+    public ResponseEntity<ErrorResponse> securityJwtCommonException(final CommonException exception) {
         final ErrorCode code = exception.getCode();
         loggingException(code);
         return ResponseEntity
