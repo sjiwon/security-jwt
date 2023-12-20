@@ -1,4 +1,0 @@
-jwt:
-  secret-key: fb897a486806fb6761208afca2cc21f9dae7d279fa96793ffa0480cd8e2dd4a7d16354c2a61ca2e5c3b8c081dbef3bcbc2012002e03f1151345ca8610d41955a
-  access-token-validity: 7200 # 2시간
-  refresh-token-validity: 1209600 # 2주
