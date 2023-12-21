@@ -16,15 +16,15 @@ public class SecurityJwtApplication {
         SpringApplication.run(SecurityJwtApplication.class, args);
     }
 
-//    @Bean
+    //    @Bean
     public ApplicationRunner applicationRunner(
             final UserRepository userRepository,
             final PasswordEncoder passwordEncoder
     ) {
         return args -> userRepository.save(new User(
-                "user",
-                passwordEncoder.encode("1234"),
-                "user",
+                "sjiwon",
+                passwordEncoder.encode("helloworld123"),
+                "서지원",
                 Set.of(RoleType.USER)
         ));
     }
