@@ -32,6 +32,6 @@ public class TokenResponseWriter {
                 .httpOnly(true)
                 .path("/")
                 .build();
-        response.addHeader(SET_COOKIE, cookie.toString());
+        response.setHeader(SET_COOKIE, cookie.toString());
     }
 }

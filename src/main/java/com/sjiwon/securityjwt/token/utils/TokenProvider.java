@@ -1,9 +1,9 @@
 package com.sjiwon.securityjwt.token.utils;
 
 public interface TokenProvider {
-    String createAccessToken(final Long memberId);
+    String createAccessToken(final Long userId);
 
-    String createRefreshToken(final Long memberId);
+    String createRefreshToken(final Long userId);
 
     Long getId(final String token);
 

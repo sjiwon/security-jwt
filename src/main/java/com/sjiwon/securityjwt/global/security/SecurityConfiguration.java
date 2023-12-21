@@ -13,7 +13,7 @@ import com.sjiwon.securityjwt.global.security.handler.JwtLogoutTokenCheckHandler
 import com.sjiwon.securityjwt.global.security.properties.CorsProperties;
 import com.sjiwon.securityjwt.global.security.provider.JsonAuthenticationProvider;
 import com.sjiwon.securityjwt.global.security.provider.RdbUserDetailsService;
-import com.sjiwon.securityjwt.token.domain.service.TokenManager;
+import com.sjiwon.securityjwt.token.domain.service.TokenIssuer;
 import com.sjiwon.securityjwt.token.utils.TokenProvider;
 import com.sjiwon.securityjwt.token.utils.TokenResponseWriter;
 import com.sjiwon.securityjwt.user.domain.repository.UserRepository;
@@ -57,7 +57,7 @@ public class SecurityConfiguration {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-    private final TokenManager tokenManager;
+    private final TokenIssuer tokenIssuer;
     private final TokenResponseWriter tokenResponseWriter;
 
     @Bean
@@ -97,7 +97,7 @@ public class SecurityConfiguration {
 
     @Bean
     public AuthenticationSuccessHandler jsonAuthenticationSuccessHandler() {
-        return new JsonAuthenticationSuccessHandler(tokenProvider, tokenManager, tokenResponseWriter);
+        return new JsonAuthenticationSuccessHandler(tokenIssuer, tokenResponseWriter, objectMapper);
     }
 
     @Bean
@@ -136,7 +136,7 @@ public class SecurityConfiguration {
 
     @Bean
     public LogoutSuccessHandler jwtLogoutSuccessHandler() {
-        return new JwtLogoutSuccessHandler(tokenManager);
+        return new JwtLogoutSuccessHandler(tokenIssuer);
     }
 
     @Bean

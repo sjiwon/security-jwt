@@ -4,7 +4,7 @@ import com.sjiwon.securityjwt.global.security.exception.AuthErrorCode;
 import com.sjiwon.securityjwt.global.security.exception.SecurityJwtAccessDeniedException;
 import com.sjiwon.securityjwt.global.security.principal.UserPrincipal;
 import com.sjiwon.securityjwt.token.exception.InvalidTokenException;
-import com.sjiwon.securityjwt.token.utils.AuthorizationExtractor;
+import com.sjiwon.securityjwt.token.utils.RequestTokenExtractor;
 import com.sjiwon.securityjwt.token.utils.TokenProvider;
 import com.sjiwon.securityjwt.user.domain.model.User;
 import com.sjiwon.securityjwt.user.domain.repository.UserRepository;
@@ -34,7 +34,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             final HttpServletResponse response,
             final FilterChain filterChain
     ) throws ServletException, IOException {
-        final Optional<String> token = AuthorizationExtractor.extractAccessToken(request);
+        final Optional<String> token = RequestTokenExtractor.extractAccessToken(request);
 
         if (token.isPresent()) {
             final String accessToken = token.get();

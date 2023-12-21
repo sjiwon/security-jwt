@@ -14,11 +14,11 @@ public class ReissueTokenUseCase {
     private final TokenIssuer tokenIssuer;
 
     public AuthToken invoke(final ReissueTokenCommand command) {
-        validateMemberToken(command.userId(), command.refreshToken());
+        validateUserToken(command.userId(), command.refreshToken());
         return tokenIssuer.reissueAuthorityToken(command.userId());
     }
 
-    private void validateMemberToken(final Long userId, final String refreshToken) {
+    private void validateUserToken(final Long userId, final String refreshToken) {
         if (isAnonymousRefreshToken(userId, refreshToken)) {
             throw CommonException.type(AuthErrorCode.INVALID_TOKEN);
         }

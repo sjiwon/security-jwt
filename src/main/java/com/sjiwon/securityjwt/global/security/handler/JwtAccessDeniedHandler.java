@@ -35,7 +35,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     }
 
     private void sendResponse(final HttpServletResponse response, final ErrorResponse errorResponse) throws IOException {
-        response.setStatus(errorResponse.getStatusCode());
+        response.setStatus(errorResponse.getStatus());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         objectMapper.writeValue(response.getWriter(), errorResponse);

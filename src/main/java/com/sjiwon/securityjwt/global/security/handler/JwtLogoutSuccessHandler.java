@@ -1,7 +1,7 @@
 package com.sjiwon.securityjwt.global.security.handler;
 
 import com.sjiwon.securityjwt.global.security.principal.UserPrincipal;
-import com.sjiwon.securityjwt.token.domain.service.TokenManager;
+import com.sjiwon.securityjwt.token.domain.service.TokenIssuer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 
 @RequiredArgsConstructor
 public class JwtLogoutSuccessHandler implements LogoutSuccessHandler {
-    private final TokenManager tokenManager;
+    private final TokenIssuer tokenIssuer;
 
     @Override
     public void onLogoutSuccess(final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) {
@@ -24,7 +24,7 @@ public class JwtLogoutSuccessHandler implements LogoutSuccessHandler {
 
     private void removeRefreshToken(final Authentication authentication) {
         final UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        tokenManager.deleteRefreshToken(userPrincipal.id());
+        tokenIssuer.deleteRefreshToken(userPrincipal.id());
     }
 
     private void clearSecurityContextHolder() {

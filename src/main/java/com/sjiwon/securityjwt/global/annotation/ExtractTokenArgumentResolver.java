@@ -12,8 +12,8 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import static com.sjiwon.securityjwt.token.utils.AuthorizationExtractor.extractAccessToken;
-import static com.sjiwon.securityjwt.token.utils.AuthorizationExtractor.extractRefreshToken;
+import static com.sjiwon.securityjwt.token.utils.RequestTokenExtractor.extractAccessToken;
+import static com.sjiwon.securityjwt.token.utils.RequestTokenExtractor.extractRefreshToken;
 
 @RequiredArgsConstructor
 public class ExtractTokenArgumentResolver implements HandlerMethodArgumentResolver {

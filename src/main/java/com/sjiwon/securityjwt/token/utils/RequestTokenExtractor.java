@@ -13,7 +13,7 @@ import static com.sjiwon.securityjwt.token.utils.TokenResponseWriter.AUTHORIZATI
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class AuthorizationExtractor {
+public class RequestTokenExtractor {
     public static Optional<String> extractAccessToken(final HttpServletRequest request) {
         final String token = request.getHeader(AUTHORIZATION);
         if (isEmptyToken(token)) {
@@ -23,7 +23,12 @@ public class AuthorizationExtractor {
     }
 
     public static Optional<String> extractRefreshToken(final HttpServletRequest request) {
-        final String token = Arrays.stream(request.getCookies())
+        final Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0) {
+            return Optional.empty();
+        }
+
+        final String token = Arrays.stream(cookies)
                 .filter(cookie -> cookie.getName().equals(TokenResponseWriter.REFRESH_TOKEN_COOKIE))
                 .map(Cookie::getValue)
                 .findFirst()

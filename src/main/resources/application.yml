@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:test
+    url: jdbc:h2:mem:test;MODE=MySQL
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -16,6 +16,9 @@ spring:
         default_batch_fetch_size: 50
 
 jwt:
-  secret-key: fb897a486806fb6761208afca2cc21f9dae7d279fa96793ffa0480cd8e2dd4a7d16354c2a61ca2e5c3b8c081dbef3bcbc2012002e03f1151345ca8610d41955a
+  secret-key: 2da7acad220ffe59e6943c826ec1fcf879a4339521ff5837fa92aab485e94bcb # 테스트용 Secret Key
   access-token-validity: 7200 # 2시간
   refresh-token-validity: 1209600 # 2주
+
+cors:
+  allowed-origin-patterns: http://localhost:8080

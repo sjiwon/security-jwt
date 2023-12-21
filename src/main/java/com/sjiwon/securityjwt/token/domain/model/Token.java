@@ -30,8 +30,8 @@ public class Token {
         this.refreshToken = refreshToken;
     }
 
-    public static Token issueRefreshToken(final Long memberId, final String refreshToken) {
-        return new Token(memberId, refreshToken);
+    public static Token issueRefreshToken(final Long userId, final String refreshToken) {
+        return new Token(userId, refreshToken);
     }
 
     public void updateRefreshToken(final String refreshToken) {

@@ -3,7 +3,7 @@ package com.sjiwon.securityjwt.global.annotation;
 import com.sjiwon.securityjwt.global.exception.CommonException;
 import com.sjiwon.securityjwt.global.security.exception.AuthErrorCode;
 import com.sjiwon.securityjwt.token.domain.model.Authenticated;
-import com.sjiwon.securityjwt.token.utils.AuthorizationExtractor;
+import com.sjiwon.securityjwt.token.utils.RequestTokenExtractor;
 import com.sjiwon.securityjwt.token.utils.TokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class AuthArgumentResolver implements HandlerMethodArgumentResolver {
     }
 
     private String getAccessToken(final HttpServletRequest request) {
-        return AuthorizationExtractor.extractAccessToken(request)
+        return RequestTokenExtractor.extractAccessToken(request)
                 .orElseThrow(() -> CommonException.type(AuthErrorCode.INVALID_PERMISSION));
     }
 }
