@@ -37,8 +37,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         final Optional<String> token = RequestTokenExtractor.extractAccessToken(request);
 
         if (token.isPresent()) {
-            final String accessToken = token.get();
             try {
+                final String accessToken = token.get();
                 tokenProvider.validateToken(accessToken);
 
                 final User user = getUserByToken(accessToken);
@@ -52,8 +52,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private User getUserByToken(final String accessToken) {
-        final Long userId = tokenProvider.getId(accessToken);
-        return userRepository.findByIdWithRoles(userId)
+        return userRepository.findByIdWithRoles(tokenProvider.getId(accessToken))
                 .orElseThrow(() -> SecurityJwtAccessDeniedException.type(UserErrorCode.USER_NOT_FOUND));
     }
 
