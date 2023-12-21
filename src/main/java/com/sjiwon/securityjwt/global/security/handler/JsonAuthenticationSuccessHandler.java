@@ -30,21 +30,16 @@ public class JsonAuthenticationSuccessHandler implements AuthenticationSuccessHa
     ) throws IOException {
         final UserPrincipal user = getPrincipal(authentication);
         final AuthToken authToken = tokenIssuer.provideAuthorityToken(user.id());
-        sendAccessTokenAndRefreshToken(response, user, authToken);
+
+        tokenResponseWriter.applyToken(response, authToken);
+        sendResponse(response, user);
     }
 
     private UserPrincipal getPrincipal(final Authentication authentication) {
         return (UserPrincipal) authentication.getPrincipal();
     }
 
-    private void sendAccessTokenAndRefreshToken(
-            final HttpServletResponse response,
-            final UserPrincipal user,
-            final AuthToken authToken
-    ) throws IOException {
-        tokenResponseWriter.applyAccessToken(response, authToken.accessToken());
-        tokenResponseWriter.applyRefreshToken(response, authToken.refreshToken());
-
+    private void sendResponse(final HttpServletResponse response, final UserPrincipal user) throws IOException {
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");

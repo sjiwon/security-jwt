@@ -1,5 +1,6 @@
 package com.sjiwon.securityjwt.token.utils;
 
+import com.sjiwon.securityjwt.token.domain.model.AuthToken;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -20,11 +21,16 @@ public class TokenResponseWriter {
         this.refreshTokenCookieAge = refreshTokenCookieAge;
     }
 
-    public void applyAccessToken(final HttpServletResponse response, final String accessToken) {
+    public void applyToken(final HttpServletResponse response, final AuthToken token) {
+        applyAccessToken(response, token.accessToken());
+        applyRefreshToken(response, token.refreshToken());
+    }
+
+    private void applyAccessToken(final HttpServletResponse response, final String accessToken) {
         response.setHeader(AUTHORIZATION, String.join(" ", AUTHORIZATION_HEADER_TOKEN_PREFIX, accessToken));
     }
 
-    public void applyRefreshToken(final HttpServletResponse response, final String refreshToken) {
+    private void applyRefreshToken(final HttpServletResponse response, final String refreshToken) {
         final ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
                 .maxAge(refreshTokenCookieAge)
                 .sameSite(STRICT.attributeValue())
