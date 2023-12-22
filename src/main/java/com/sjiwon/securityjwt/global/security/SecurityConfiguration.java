@@ -157,7 +157,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/login").permitAll()
                         .requestMatchers("/api/logout").hasRole("USER")
                         .requestMatchers("/api/token/reissue").permitAll()
-                        .requestMatchers("/call-with-access-token", "/call-with-refresh-token").permitAll()
+                        .requestMatchers("/call-with-access-token", "/call-with-refresh-token", "/get-auth-info").permitAll()
+                        .anyRequest().authenticated()
         );
 
         http.sessionManagement(session ->

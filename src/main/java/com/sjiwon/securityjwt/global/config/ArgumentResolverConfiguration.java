@@ -17,7 +17,7 @@ public class ArgumentResolverConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(new AuthArgumentResolver(tokenProvider));
+        resolvers.add(new AuthArgumentResolver());
         resolvers.add(new ExtractTokenArgumentResolver(tokenProvider));
     }
 }
