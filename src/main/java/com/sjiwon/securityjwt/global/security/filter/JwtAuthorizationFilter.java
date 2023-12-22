@@ -16,7 +16,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -26,7 +25,6 @@ import java.util.Optional;
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private final TokenProvider tokenProvider;
     private final UserRepository userRepository;
-    private final AccessDeniedHandler accessDeniedHandler;
 
     @Override
     protected void doFilterInternal(
@@ -44,7 +42,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 final User user = getUserByToken(accessToken);
                 applyUserToSecurityContext(user);
             } catch (final InvalidTokenException e) {
-                accessDeniedHandler.handle(request, response, SecurityJwtAccessDeniedException.type(AuthErrorCode.INVALID_TOKEN));
+                throw SecurityJwtAccessDeniedException.type(AuthErrorCode.INVALID_TOKEN);
             }
         }
 

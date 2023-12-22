@@ -2,6 +2,7 @@ package com.sjiwon.securityjwt.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sjiwon.securityjwt.global.security.filter.JsonAuthenticationFilter;
+import com.sjiwon.securityjwt.global.security.filter.JwtAuthorizationExceptionTranslationFilter;
 import com.sjiwon.securityjwt.global.security.filter.JwtAuthorizationFilter;
 import com.sjiwon.securityjwt.global.security.filter.LogoutExceptionTranslationFilter;
 import com.sjiwon.securityjwt.global.security.handler.JsonAuthenticationFailureHandler;
@@ -115,11 +116,6 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(tokenProvider, userRepository, jwtAccessDeniedHandler());
-    }
-
-    @Bean
     public AuthenticationEntryPoint jwtAuthenticationEntryPoint() {
         return new JwtAuthenticationEntryPoint(objectMapper);
     }
@@ -127,6 +123,16 @@ public class SecurityConfiguration {
     @Bean
     public AccessDeniedHandler jwtAccessDeniedHandler() {
         return new JwtAccessDeniedHandler(objectMapper);
+    }
+
+    @Bean
+    public JwtAuthorizationFilter jwtAuthorizationFilter() {
+        return new JwtAuthorizationFilter(tokenProvider, userRepository);
+    }
+
+    @Bean
+    public JwtAuthorizationExceptionTranslationFilter jwtAuthorizationExceptionTranslationFilter() {
+        return new JwtAuthorizationExceptionTranslationFilter(jwtAccessDeniedHandler());
     }
 
     @Bean
@@ -167,6 +173,7 @@ public class SecurityConfiguration {
 
         http.addFilterBefore(logoutExceptionTranslationFilter(), LogoutFilter.class);
         http.addFilterBefore(jwtAuthorizationFilter(), LogoutExceptionTranslationFilter.class);
+        http.addFilterBefore(jwtAuthorizationExceptionTranslationFilter(), JwtAuthorizationFilter.class);
         http.addFilterAt(jsonAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         http.logout(logout ->

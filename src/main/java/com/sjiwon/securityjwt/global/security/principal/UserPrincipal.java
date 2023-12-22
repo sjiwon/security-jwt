@@ -1,6 +1,5 @@
 package com.sjiwon.securityjwt.global.security.principal;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sjiwon.securityjwt.user.domain.model.Role;
 import com.sjiwon.securityjwt.user.domain.model.User;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,7 +14,7 @@ public record UserPrincipal(
         Long id,
         String name,
         String loginId,
-        @JsonIgnore String password,
+        String password,
         List<String> roles
 ) implements UserDetails {
     public UserPrincipal(final User user) {

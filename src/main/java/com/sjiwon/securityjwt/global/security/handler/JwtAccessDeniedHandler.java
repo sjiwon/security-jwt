@@ -27,7 +27,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         sendResponse(response, errorResponse);
     }
 
-    private static ErrorResponse createErrorResponse(final AccessDeniedException exception) {
+    private ErrorResponse createErrorResponse(final AccessDeniedException exception) {
         if (exception instanceof final SecurityJwtAccessDeniedException ex) {
             return ErrorResponse.from(ex.getCode());
         }
